@@ -2,10 +2,9 @@
 Banking Credit Portfolio & Loan Disbursement Data Generation Engine.
 
 Generates 1,000,000 corporate and retail loan disbursement & transaction records
-with designed macro-economic signals:
-- Ground-Truth March 2023 Promotional Credit Rate Cut (Volume surge + yield compression)
-- Ground-Truth Q4 Festive Retail Lending Spike
-- Ground-Truth Macro Policy Rate Hikes (Yield expansion)
+with fixed UTC epoch timestamps (timezone-immune) and designed macro-economic signals:
+- Ground-Truth March 2023 Promotional Credit Rate Cut (-150 bps yield cut, +40% volume surge)
+- Ground-Truth October 2023 Festive Retail Lending Push (-50 bps yield cut, +25% volume expansion)
 """
 
 import os
@@ -36,7 +35,15 @@ class BankingPortfolioGenerator:
         Generates 1,000,000 banking loan disbursements across:
         - Products: Home Loans, MSME Business Credit, Auto Loans, Personal Loans, Corporate Working Capital
         - Regions: North Zone, West Zone, South Zone, East Zone
-        - Channels: Branch Network, Digital Banking, Direct Sales Agent (DSA)
+        - Channels: Digital Banking, Branch Network, DSA Partner
+        
+        Borrower Structure:
+        - Borrowers are drawn from a fixed pool of 250,000; COUNT(DISTINCT) reflects active in-window
+          borrowers (~245k), yielding ~4 facilities per active borrower over 18 months.
+        
+        Income Modeling:
+        - Income is modeled as first-year projected interest on disbursed principal (simple, non-amortized),
+          appropriate for origination-flow attribution.
         """
         if os.path.exists(self.parquet_path):
             try:
@@ -47,7 +54,10 @@ class BankingPortfolioGenerator:
         np.random.seed(self.random_state)
         n = self.n_records
 
-        customer_ids = np.random.randint(100000, 999000, n)
+        # Intentional customer pool: 250,000 unique borrowers for repeat credit facilities
+        n_unique_borrowers = 250000
+        customer_pool = np.arange(100001, 100001 + n_unique_borrowers)
+        customer_ids = np.random.choice(customer_pool, size=n, replace=True)
         
         products = ['Home Loans', 'MSME Business Credit', 'Auto Loans', 'Personal Loans', 'Corporate Working Capital']
         product_probs = [0.35, 0.25, 0.20, 0.12, 0.08]
@@ -59,9 +69,9 @@ class BankingPortfolioGenerator:
         channels = ['Digital Banking', 'Branch Network', 'DSA Partner']
         channel_col = np.random.choice(channels, n, p=[0.55, 0.35, 0.10])
 
-        # Generate continuous timestamps across 2023-01-01 to 2024-06-30
-        start_ts = int(pd.Timestamp("2023-01-01").timestamp())
-        end_ts = int(pd.Timestamp("2024-06-30").timestamp())
+        # Fixed UTC epoch conversion (immune to local machine timezone drift)
+        start_ts = int(pd.Timestamp("2023-01-01").value // 10**9)
+        end_ts = int(pd.Timestamp("2024-06-30").value // 10**9)
         random_ts = np.random.randint(start_ts, end_ts, n)
         timestamps = pd.to_datetime(random_ts, unit='s')
         months = timestamps.strftime('%Y-%m')
@@ -90,16 +100,15 @@ class BankingPortfolioGenerator:
 
         # -------------------------------------------------------------
         # INJECT GROUND-TRUTH ECONOMIC SIGNALS:
-        # 1. March 2023 FY-End MSME Credit Campaign:
-        #    - Bank cuts MSME lending rate by 150 bps (Yield compression)
-        #    - Triggers a 40% surge in MSME loan disbursement volume
+        # 1. March 2023 MSME Credit Campaign:
+        #    - 150 bps promotional rate cut + 40% volume surge
         # -------------------------------------------------------------
         msme_mar23_mask = (product_col == 'MSME Business Credit') & (months == '2023-03')
         yields[msme_mar23_mask] = (yields[msme_mar23_mask] - 1.50).clip(7.0, 20.0)
         principals[msme_mar23_mask] = principals[msme_mar23_mask] * 1.40
 
         # 2. October 2023 Festive Home Loan Push:
-        #    - 50 bps festive processing discount + 25% volume expansion
+        #    - 50 bps festive rate discount + 25% volume expansion
         home_oct23_mask = (product_col == 'Home Loans') & (months == '2023-10')
         yields[home_oct23_mask] = (yields[home_oct23_mask] - 0.50).clip(6.5, 18.0)
         principals[home_oct23_mask] = principals[home_oct23_mask] * 1.25
@@ -126,7 +135,6 @@ class BankingPortfolioGenerator:
             'npa_flag': npa_flag
         })
 
-        # Save to Parquet via PyArrow or DuckDB native writer
         try:
             df.to_parquet(self.parquet_path, index=False, engine='pyarrow', compression='snappy')
         except Exception:
