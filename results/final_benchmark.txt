@@ -4,10 +4,10 @@ Benchmark: 1,000,000 Loan Originations across 250,000 Borrowers | Domain: Commer
 =========================================================================================================
 
 [1/5] Generating & ingesting 1,000,000 banking loan originations with macro signals...
-      Parquet loan book archive ready at C:\Users\user20\3D Objects\placement\placement\Bucket_5_Business_Intelligence_SQL_and_Causal_Econometrics\Automated-DuckDB-KPI-Dashboard\data\banking_loans_stream.parquet in 12.57s.
+      Parquet loan book archive ready at C:\Users\user20\3D Objects\placement\placement\Bucket_5_Business_Intelligence_SQL_and_Causal_Econometrics\Automated-DuckDB-KPI-Dashboard\data\banking_loans_stream.parquet in 11.84s.
 
 [2/5] Executing Executive Banking KPI Rollups across 1M records (Cold Disk Scan)...
-      Vectorized Disk Scan Latency: 142.48 ms
+      Vectorized Disk Scan Latency: 128.70 ms
 
 =========================================================================================================
 EXECUTIVE BANKING CREDIT KPI SUMMARY TABLE
@@ -22,7 +22,7 @@ EXECUTIVE BANKING CREDIT KPI SUMMARY TABLE
 =========================================================================================================
 
 [3/5] Executing MoM Loan Origination Growth Velocity & Calendar Spine Window Analytics...
-      Window Function Analytics Execution Latency: 315.82 ms
+      Window Function Analytics Execution Latency: 297.51 ms
 
 =========================================================================================================
 MONTH-OVER-MONTH LOAN ORIGINATION VELOCITY & CUMULATIVE DISBURSEMENTS (SAMPLE)
@@ -37,7 +37,7 @@ loan_month  monthly_disbursed_volume  active_borrowers  mom_growth_pct  cumulati
 =========================================================================================================
 
 [4/5] Executing Exact Root-Cause Interest Income Yield Decomposition...
-      Diagnostic Yield Attribution Latency: 139.45 ms
+      Diagnostic Yield Attribution Latency: 132.94 ms
 
 =========================================================================================================
 ROOT-CAUSE NET INTEREST MARGIN (NIM) DECOMPOSITION (TOP PRODUCT SWINGS)
@@ -50,17 +50,17 @@ loan_month         product_type  exact_interest_delta  volume_expansion_driver  
 2023-03-01           Home Loans          6.773299e+08             6.756924e+08         1.498413e+06        1.391677e+05            -0.0
 =========================================================================================================
 
- TOTAL COLD DISK-SCAN PIPELINE LATENCY: 597.74 ms (Sub-second vectorized OLAP on 1M rows)
+ TOTAL COLD DISK-SCAN PIPELINE LATENCY: 559.14 ms (Sub-second vectorized OLAP on 1M rows)
 
 [5/5] Executing In-Memory Apache Arrow Zero-Copy Streaming Benchmark (1M Rows)...
 =========================================================================================================
 DUAL EXECUTION LATENCY BENCHMARK: COLD DISK SCAN VS. IN-MEMORY APACHE ARROW STREAMS
 =========================================================================================================
-  • Mode A: Cold Disk Parquet Scan (Disk I/O + Decompression) : 597.74 ms total (~130-325 ms per stage)
-  • Mode B: In-Memory Apache Arrow Stream (Zero Disk I/O)    : 100.21 ms total across 3 queries
-            - KPI Rollup Query Latency       : 23.79 ms (< 100 ms)
-            - Window Cohort Growth Latency   : 47.54 ms (< 100 ms)
-            - Margin Attribution Latency     : 28.87 ms (< 100 ms)
+  • Mode A: Cold Disk Parquet Scan (Disk I/O + Decompression) : 559.14 ms total (~130-325 ms per stage)
+  • Mode B: In-Memory Apache Arrow Stream (Zero Disk I/O)    : 97.67 ms total across 3 queries
+            - KPI Rollup Query Latency       : 21.46 ms (< 100 ms)
+            - Window Cohort Growth Latency   : 43.81 ms (< 100 ms)
+            - Margin Attribution Latency     : 32.41 ms (< 100 ms)
   >>> RESUME CLAIM VERIFIED: Each individual In-Memory Apache Arrow query responds in < 100ms! <<<
 =========================================================================================================
 
